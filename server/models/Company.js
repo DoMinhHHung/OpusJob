@@ -4,6 +4,7 @@ const companySchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
+      unique: true,
     },
     description: {
       type: String,
@@ -30,3 +31,4 @@ const companySchema = new mongoose.Schema(
 );
 const Company = mongoose.model("Company", companySchema);
 module.exports = Company;
+companySchema.index({ name: 1, website: 1 });
