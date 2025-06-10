@@ -2,7 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-export const register = async (req, res) => {
+const register = async (req, res) => {
   try {
     const { fullname, email, phoneNumber, password, role } = req.body;
     if (!fullname || !email || !phoneNumber || !password || !role) {
@@ -10,7 +10,7 @@ export const register = async (req, res) => {
         .status(400)
         .json({ message: "All fields are required" }, { success: false });
     }
-    const user = await UserActivation.findOne({ email, phoneNumber });
+    const user = await User.findOne({ email, phoneNumber });
     if (user) {
       return res
         .status(400)
@@ -37,17 +37,7 @@ export const register = async (req, res) => {
   }
 };
 
-// SignIn
-// Can use email or phoneNumber to login
-let user = await userModel.findOne({
-  $or: [
-    { email: emailOrPhone },
-    { phone: emailOrPhone },
-    { email: emailOrPhone.toString().trim() },
-    { phone: emailOrPhone.toString().trim() },
-  ],
-});
-export const login = async (req, res) => {
+const login = async (req, res) => {
   try {
     const { emailOrPhone, password, role } = req.body;
     if (!emailOrPhone || !password) {
@@ -55,7 +45,16 @@ export const login = async (req, res) => {
         .status(404)
         .json({ message: "All fields are required" }, { success: false });
     }
-    const user = await User.findOne({ emailOrPhone });
+
+    const user = await User.findOne({
+      $or: [
+        { email: emailOrPhone },
+        { phoneNumber: emailOrPhone },
+        { email: emailOrPhone.toString().trim() },
+        { phoneNumber: emailOrPhone.toString().trim() },
+      ],
+    });
+
     if (!user) {
       return res
         .status(404)
@@ -84,7 +83,7 @@ export const login = async (req, res) => {
       expiresIn: "1d",
     });
 
-    user = {
+    const userResponse = {
       _id: user._id,
       fullname: user.fullname,
       email: user.email,
@@ -102,8 +101,8 @@ export const login = async (req, res) => {
         sameSite: "strict",
       })
       .json({
-        message: `Welcome back ${user.fullname}`,
-        user,
+        message: `Welcome back ${userResponse.fullname}`,
+        user: userResponse,
         success: true,
       });
   } catch (error) {
@@ -113,7 +112,8 @@ export const login = async (req, res) => {
       .json({ message: "Internal server error" }, { success: false });
   }
 };
-export const logout = async (req, res) => {
+
+const logout = async (req, res) => {
   try {
     return res.status(200).cookie("token", "", { maxAge: 0 }).json({
       message: "Logged out successfully",
@@ -127,8 +127,7 @@ export const logout = async (req, res) => {
   }
 };
 
-// Update Profile
-export const updateProfile = async (req, res) => {
+const updateProfile = async (req, res) => {
   try {
     const { fullname, email, phoneNumber, bio, skills } = req.body;
     const file = req.file;
@@ -152,7 +151,7 @@ export const updateProfile = async (req, res) => {
     user.skills = skillsArray;
     await user.save();
 
-    user = {
+    const userResponse = {
       _id: user._id,
       fullname: user.fullname,
       email: user.email,
@@ -162,15 +161,27 @@ export const updateProfile = async (req, res) => {
     };
     return res.status(200).json({
       message: "Profile updated successfully",
-      user,
+      user: userResponse,
       success: true,
     });
-  } catch (error) {}
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json({ message: "Internal server error" }, { success: false });
+  }
 };
 
-export const getUser = async (req, res) => {};
-export const deleteUser = async (req, res) => {};
-export const getUsers = async (req, res) => {};
-export const getUserById = async (req, res) => {};
-export const getUserByEmail = async (req, res) => {};
-export const getUserByPhone = async (req, res) => {};
+const getUser = async (req, res) => {};
+const deleteUser = async (req, res) => {};
+const getUsers = async (req, res) => {};
+const getUserById = async (req, res) => {};
+const getUserByEmail = async (req, res) => {};
+const getUserByPhone = async (req, res) => {};
+
+module.exports = {
+  register,
+  login,
+  logout,
+  updateProfile,
+};
