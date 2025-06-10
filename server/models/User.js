@@ -56,3 +56,6 @@ const userSchema = new mongoose.Schema(
 const User = mongoose.model("User", userSchema);
 
 module.exports = User;
+
+// Indexes email and phoneNumber
+userSchema.index({ email: 1, phoneNumber: 1 });
