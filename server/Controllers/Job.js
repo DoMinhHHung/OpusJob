@@ -60,11 +60,12 @@ const getAllJobs = async (req, res) => {
         { requirements: { $regex: keyword, $options: "i" } },
         { location: { $regex: keyword, $options: "i" } },
         { jobType: { $regex: keyword, $options: "i" } },
-        { salary: { $regex: keyword, $options: "i" } },
-        { company: { $regex: keyword, $options: "i" } },
+        { position: { $regex: keyword, $options: "i" } },
       ],
     };
-    const jobs = await Job.find(query);
+    const jobs = await Job.find(query)
+      .populate("company", "name")
+      .sort({ createdAt: -1 });
     if (!jobs) {
       return res.status(404).json({ message: "No jobs found", success: false });
     }

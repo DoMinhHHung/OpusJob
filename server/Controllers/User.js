@@ -6,16 +6,24 @@ const register = async (req, res) => {
   try {
     const { fullname, email, phoneNumber, password, role } = req.body;
     if (!fullname || !email || !phoneNumber || !password || !role) {
-      return res
-        .status(400)
-        .json({ message: "All fields are required" }, { success: false });
+      return res.status(400).json({
+        message: "All fields are required",
+        success: false,
+      });
     }
-    const user = await User.findOne({ email, phoneNumber });
-    if (user) {
-      return res
-        .status(400)
-        .json({ message: "User already exists" }, { success: false });
+
+    // Kiểm tra email và phoneNumber riêng biệt
+    const existingUser = await User.findOne({
+      $or: [{ email: email }, { phoneNumber: phoneNumber }],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: "Email or phone number already exists",
+        success: false,
+      });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       fullname,
@@ -31,9 +39,10 @@ const register = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res
-      .status(500)
-      .json({ message: "Internal server error" }, { success: false });
+    res.status(500).json({
+      message: "Internal server error",
+      success: false,
+    });
   }
 };
 
@@ -131,77 +140,6 @@ const logout = async (req, res) => {
   }
 };
 
-// const updateProfile = async (req, res) => {
-//   try {
-//     const { fullname, email, phoneNumber, bio, skills } = req.body;
-//     const file = req.file;
-//     if (!fullname || !email || !phoneNumber || !bio || !skills) {
-//       return res
-//         .status(400)
-//         .json({ message: "All fields are required" }, { success: false });
-//     }
-
-//     //cloudnary
-//     let skillArray;
-//     if (skills) {
-//       const skillsArray = skills.split(",");
-//     }
-
-//     const userId = req.id;
-//     let user = await User.findById(userId);
-//     if (!user) {
-//       return res
-//         .status(404)
-//         .json({ message: "User not found" }, { success: false });
-//     }
-
-//     // Update database profile
-//     if (fullname) {
-//       user.fullname = fullname;
-//     }
-//     if (email) {
-//       user.email = email;
-//     }
-//     if (phoneNumber) {
-//       user.phoneNumber = phoneNumber;
-//     }
-//     if (bio) {
-//       user.profile.bio = bio;
-//     }
-//     if (skills) {
-//       user.profile.skills = skillsArray;
-//     }
-
-//     await user.save();
-
-//     user.fullname = fullname;
-//     user.email = email;
-//     user.phoneNumber = phoneNumber;
-//     user.bio = bio;
-//     user.skills = skillsArray;
-//     await user.save();
-
-//     const userResponse = {
-//       _id: user._id,
-//       fullname: user.fullname,
-//       email: user.email,
-//       phoneNumber: user.phoneNumber,
-//       role: user.role,
-//       profile: user.profile,
-//     };
-//     return res.status(200).json({
-//       message: "Profile updated successfully",
-//       user: userResponse,
-//       success: true,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     res
-//       .status(500)
-//       .json({ message: "Internal server error" }, { success: false });
-//   }
-// };
-
 const validator = require("validator");
 const cloudinary = require("cloudinary").v2;
 
@@ -248,6 +186,21 @@ const updateProfile = async (req, res) => {
       const result = await cloudinary.uploader.upload(file.path);
       profilePictureUrl = result.secure_url;
       user.profile.profilePicture = profilePictureUrl;
+    }
+
+    // Kiểm tra xem email hoặc phoneNumber mới có bị trùng không
+    const existingUser = await User.findOne({
+      $or: [
+        { email: email, _id: { $ne: userId } },
+        { phoneNumber: phoneNumber, _id: { $ne: userId } },
+      ],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: "Email or phone number already exists",
+        success: false,
+      });
     }
 
     // Cập nhật thông tin

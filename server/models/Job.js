@@ -43,7 +43,7 @@ const jobSchema = new mongoose.Schema(
     application: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: "Application",
-      default: null,
+      default: [],
     },
     quantity: {
       type: Number,
